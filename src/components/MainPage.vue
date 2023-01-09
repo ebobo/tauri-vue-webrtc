@@ -18,7 +18,7 @@
       </v-col>
     </v-row>
     <v-row justify="center">
-      <video width="500" muted loop autoplay controls>
+      <video width="500" id="videoCtl" muted loop autoplay controls>
         Your browser does not support the video tag.
       </video>
     </v-row>
@@ -53,10 +53,18 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 
-import { signinAPIgateway, getCameras } from '../service/rest';
+import {
+  signinAPIgateway,
+  getCameras,
+  initiateWebRTCSession,
+  updateAnswerSDP,
+  addServerIceCandidate,
+} from '../service/rest';
 
 // Logo
 import logo from '../assets/autronica_logo.png';
+
+const STUN_URL = 'stun:stun1.l.google.com:19302';
 
 interface Camera {
   displayName: string;
@@ -119,9 +127,69 @@ export default defineComponent({
         });
     },
 
-    connectToCamera() {
-      console.log('connect to camera');
-      console.log(this.selectCameraID);
+    async connectToCamera() {
+      if (this.selectCameraID === undefined) return;
+      if (this.peerConnection != null) await this.peerConnection.close();
+      console.log('connectToCamera');
+
+      this.peerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: STUN_URL }],
+      });
+
+      this.peerConnection.ontrack = (event: any) => {
+        console.log('ontrack');
+        const video = document.getElementById('videoCtl') as HTMLVideoElement;
+        video.srcObject = event.streams[0];
+      };
+
+      this.peerConnection.onicecandidate = (event: any) => {
+        if (event.candidate) {
+          console.log('onicecandidate');
+          console.log(event.candidate);
+        }
+      };
+      this.peerConnection.oniceconnectionstatechange = () => {
+        console.log(
+          'Connection state changed: ' + this.peerConnection.connectionState
+        );
+      };
+
+      initiateWebRTCSession(this.selectCameraID).then((res) => {
+        console.log(res);
+        const offer = new RTCSessionDescription(JSON.parse(res.offerSDP));
+        this.peerConnection
+          .setRemoteDescription(offer)
+          .then(() => {
+            console.log('setRemoteDescription');
+            return this.peerConnection.createAnswer();
+          })
+          .then((answer: any) => {
+            console.log('createAnswer');
+            return this.peerConnection.setLocalDescription(answer);
+          })
+          .then(() => {
+            updateAnswerSDP(
+              res,
+              JSON.stringify(this.peerConnection.localDescription)
+            )
+              .then(() => {
+                addServerIceCandidate(res.sessionId).then((res) => {
+                  console.log(res);
+                  res.candidates.forEach((candidate: any) => {
+                    this.peerConnection.addIceCandidate(
+                      new RTCIceCandidate(JSON.parse(candidate))
+                    );
+                  });
+                });
+              })
+              .catch((err: any) => {
+                console.log(err);
+              });
+          })
+          .catch((err: any) => {
+            console.log(err);
+          });
+      });
     },
   },
 });

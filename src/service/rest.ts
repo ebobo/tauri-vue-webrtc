@@ -40,7 +40,7 @@ export interface SigninAPIgatewayResponse {
 export async function signinAPIgateway(): Promise<SigninAPIgatewayResponse> {
   return http
     .post<SigninAPIgatewayResponse>(
-      `/idp/connect/token`,
+      `idp/connect/token`,
       qs.stringify({
         grant_type: 'password',
         username: 'qixu',
@@ -59,9 +59,58 @@ export async function signinAPIgateway(): Promise<SigninAPIgatewayResponse> {
     });
 }
 
+//getCameras
 export async function getCameras(): Promise<any> {
   return http
     .get('api/rest/v1/cameras', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    .then((response) => {
+      return response.data;
+    });
+}
+
+//webRTC
+
+//initiateWebRTCSession
+export async function initiateWebRTCSession(cameraID: string): Promise<any> {
+  const body = { cameraId: cameraID, resolution: 'notInUse' };
+  return http
+    .post('api/WebRTC/v1/WebRTCSession', body, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token,
+      },
+    })
+    .then((response) => {
+      return response.data;
+    });
+}
+
+//updateAnswerSDP
+export async function updateAnswerSDP(
+  data: any,
+  localDescription: any
+): Promise<any> {
+  data['answerSDP'] = localDescription;
+  return http
+    .put('api/WebRTC/v1/WebRTCSession', data, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token,
+      },
+    })
+    .then((response) => {
+      return response.data;
+    });
+}
+
+//addServerIceCandidate
+export async function addServerIceCandidate(sessionId: string): Promise<any> {
+  return http
+    .get(`api/WebRTC/v1/IceCandidates/${sessionId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
