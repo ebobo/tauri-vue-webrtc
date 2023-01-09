@@ -155,7 +155,6 @@ export default defineComponent({
       };
 
       initiateWebRTCSession(this.selectCameraID).then((res) => {
-        console.log(res);
         const offer = new RTCSessionDescription(JSON.parse(res.offerSDP));
         this.peerConnection
           .setRemoteDescription(offer)
