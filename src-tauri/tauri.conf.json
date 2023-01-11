@@ -3,7 +3,7 @@
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
-    "devPath": "http://localhost:5173",
+    "devPath": "http://localhost:3005",
     "distDir": "../dist"
   },
   "package": {
@@ -12,7 +12,11 @@
   },
   "tauri": {
     "allowlist": {
-      "all": false
+      "all": true,
+      "protocol": {
+        "asset": true,
+        "assetScope": ["**"]
+      }
     },
     "bundle": {
       "active": true,
@@ -29,7 +33,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "com.tauri-webrtc",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -56,7 +60,7 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 900,
         "resizable": true,
         "title": "Tauri WebRTC",
         "width": 800

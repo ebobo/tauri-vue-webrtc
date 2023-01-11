@@ -23,15 +23,47 @@
       </video>
     </v-row>
     <v-row justify="center">
-      <v-col cols="8">
+      <v-col cols="6">
         <v-text-field
+          label="server ip"
           class="text-editor"
           v-model="server"
           variant="underlined"
           color="#82b1ff"
+          :append-inner-icon="
+            serverOK ? 'mdi-check-circle-outline' : 'mdi-close-outline'
+          "
         ></v-text-field>
       </v-col>
+      <v-col cols="2">
+        <v-btn class="verify-button" @click="verifyServer">Verify</v-btn>
+      </v-col>
     </v-row>
+    <v-row justify="center">
+      <v-col cols="4">
+        <v-text-field
+          class="text-editor"
+          label="user name"
+          v-model="user"
+          variant="underlined"
+          color="#82b1ff"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="4">
+        <v-text-field
+          class="text-editor"
+          label="password"
+          v-model="password"
+          variant="underlined"
+          color="#82b1ff"
+          type="password"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="2">
+        <v-btn class="login-button" @click="loginAPIServer">Login</v-btn>
+      </v-col>
+    </v-row>
+    <v-row justify="center"> </v-row>
 
     <v-row justify="center">
       <v-col cols="10">
@@ -54,6 +86,7 @@
 import { defineComponent } from 'vue';
 
 import {
+  verifyUris,
   signinAPIgateway,
   getCameras,
   initiateWebRTCSession,
@@ -63,7 +96,6 @@ import {
 
 // Logo
 import logo from '../assets/autronica_logo.png';
-
 const STUN_URL = 'stun:stun1.l.google.com:19302';
 
 interface Camera {
@@ -82,12 +114,15 @@ export default defineComponent({
       cameras: [] as Camera[],
       selectedCamera: '',
       peerConnection: null,
+      user: 'qixu',
+      password: 'Newyear2023!',
+      serverOK: false,
     };
   },
   created() {
     console.log('server path:');
     console.log(process.env.VITE_APP_SERVER_PATH);
-    this.loginAPIServer();
+    // this.loginAPIServer();
   },
 
   computed: {
@@ -104,9 +139,23 @@ export default defineComponent({
   },
 
   methods: {
-    loginAPIServer() {
-      signinAPIgateway()
+    verifyServer() {
+      verifyUris()
         .then(() => {
+          this.serverOK = true;
+        })
+        .catch((err) => {
+          this.serverOK = false;
+          console.log(err);
+        });
+    },
+
+    loginAPIServer() {
+      if (this.user === '' || this.password === '') return;
+      console.log(this.user, this.password);
+      signinAPIgateway(this.user, this.password)
+        .then(() => {
+          console.log('login success');
           this.cameras = [];
           getCameras()
             .then((res) => {
@@ -210,5 +259,17 @@ export default defineComponent({
   margin-left: 0.5rem;
   color: #fff;
   background-color: #82b1ff;
+}
+
+.login-button {
+  margin-top: 1.5rem;
+  margin-left: 0.5rem;
+  background-color: greenyellow;
+}
+
+.verify-button {
+  margin-top: 1.5rem;
+  margin-left: 0.5rem;
+  background-color: orange;
 }
 </style>

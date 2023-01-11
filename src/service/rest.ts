@@ -37,14 +37,24 @@ export interface SigninAPIgatewayResponse {
 //   scope: string;
 // }
 
-export async function signinAPIgateway(): Promise<SigninAPIgatewayResponse> {
+//getServices
+export async function verifyUris(): Promise<any> {
+  return http.get('api/.well-known/uris').then((response) => {
+    return response.data;
+  });
+}
+
+export async function signinAPIgateway(
+  user: string,
+  password: string
+): Promise<SigninAPIgatewayResponse> {
   return http
     .post<SigninAPIgatewayResponse>(
       `idp/connect/token`,
       qs.stringify({
         grant_type: 'password',
-        username: 'qixu',
-        password: 'Newyear2023!',
+        username: user,
+        password: password,
         client_id: 'GrantValidatorClient',
       }),
       {
@@ -55,6 +65,7 @@ export async function signinAPIgateway(): Promise<SigninAPIgatewayResponse> {
     )
     .then((response) => {
       token = response.data.access_token;
+      console.log(response.data);
       return response.data;
     });
 }
