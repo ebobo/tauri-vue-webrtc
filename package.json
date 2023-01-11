@@ -13,6 +13,7 @@
     "@mdi/font": "5.9.55",
     "@tauri-apps/api": "^1.2.0",
     "@types/qs": "^6.9.7",
+    "@vitejs/plugin-basic-ssl": "^1.0.1",
     "axios": "^1.2.2",
     "qs": "^6.11.0",
     "roboto-fontface": "*",
