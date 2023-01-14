@@ -85,7 +85,7 @@ export async function getCameras(): Promise<any> {
 
 //webRTC
 
-//initiateWebRTCSession
+// initiateWebRTCSession with cameraID
 export async function initiateWebRTCSession(cameraID: string): Promise<any> {
   const body = { cameraId: cameraID, resolution: 'notInUse' };
   return http
@@ -119,11 +119,29 @@ export async function updateAnswerSDP(
 }
 
 //addServerIceCandidate
-export async function addServerIceCandidate(sessionId: string): Promise<any> {
+export async function getServerIceCandidate(sessionId: string): Promise<any> {
   return http
     .get(`api/WebRTC/v1/IceCandidates/${sessionId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
+      },
+    })
+    .then((response) => {
+      return response.data;
+    });
+}
+
+//sendIceCandidate
+export async function sendIceCandidate(
+  sessionId: string,
+  candidate: any
+): Promise<any> {
+  const body = { sessionId: sessionId, candidates: [candidate] };
+  return http
+    .post('api/WebRTC/v1/IceCandidates', body, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token,
       },
     })
     .then((response) => {

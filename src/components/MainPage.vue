@@ -91,7 +91,8 @@ import {
   getCameras,
   initiateWebRTCSession,
   updateAnswerSDP,
-  addServerIceCandidate,
+  getServerIceCandidate,
+  sendIceCandidate,
 } from '../service/rest';
 
 // Logo
@@ -113,7 +114,8 @@ export default defineComponent({
       server: process.env.VITE_APP_SERVER_PATH,
       cameras: [] as Camera[],
       selectedCamera: '',
-      peerConnection: null,
+      peerConnection: null as RTCPeerConnection | null,
+      sessionID: '',
       user: 'qixu',
       password: 'Newyear2023!',
       serverOK: false,
@@ -180,49 +182,55 @@ export default defineComponent({
       if (this.selectCameraID === undefined) return;
       if (this.peerConnection != null) await this.peerConnection.close();
 
-      this.peerConnection = new RTCPeerConnection({
+      // create a new peer connection
+      // which represents a connection between the local device and a remote peer.
+      const pc = new RTCPeerConnection({
         iceServers: [{ urls: STUN_URL }],
       });
 
-      this.peerConnection.ontrack = (event: any) => {
+      // media stream track has been added to the connection
+      pc.ontrack = (event: any) => {
+        // fetch the video element and set the stream
         const video = document.getElementById('videoCtl') as HTMLVideoElement;
         video.srcObject = event.streams[0];
       };
 
-      this.peerConnection.onicecandidate = (event: any) => {
+      // when an RTCIceCandidate has been identified and added to the local peer
+      pc.onicecandidate = (event: any) => {
         if (event.candidate) {
-          console.log('onicecandidate');
-          console.log(event.candidate);
+          // send the ICE candidate to the remote peer
+          sendIceCandidate(this.sessionID, event.candidate).then(() => {
+            console.log('sendIceCandidate');
+          });
         }
       };
-      this.peerConnection.oniceconnectionstatechange = () => {
-        console.log(
-          'Connection state changed: ' + this.peerConnection.connectionState
-        );
+
+      // when the state of the connection changes
+      pc.oniceconnectionstatechange = () => {
+        console.log('Connection state changed: ' + pc.connectionState);
       };
 
+      // post request to initiate a WebRTC session with the cameraID and
+      // get the offer SDP (session description protocol) from remote peer
       initiateWebRTCSession(this.selectCameraID).then((res) => {
         const offer = new RTCSessionDescription(JSON.parse(res.offerSDP));
-        this.peerConnection
-          .setRemoteDescription(offer)
+        pc.setRemoteDescription(offer)
           .then(() => {
             console.log('setRemoteDescription');
-            return this.peerConnection.createAnswer();
+            // create an answer SDP based on the offer SDP
+            return pc.createAnswer();
           })
           .then((answer: any) => {
-            console.log('createAnswer');
-            return this.peerConnection.setLocalDescription(answer);
+            // set the local description
+            return pc.setLocalDescription(answer);
           })
           .then(() => {
-            updateAnswerSDP(
-              res,
-              JSON.stringify(this.peerConnection.localDescription)
-            )
+            updateAnswerSDP(res, JSON.stringify(pc.localDescription))
               .then(() => {
-                addServerIceCandidate(res.sessionId).then((res) => {
-                  console.log(res);
-                  res.candidates.forEach((candidate: any) => {
-                    this.peerConnection.addIceCandidate(
+                this.sessionID = res.sessionId;
+                getServerIceCandidate(res.sessionId).then((res) => {
+                  res.candidates.forEach(async (candidate: any) => {
+                    await pc.addIceCandidate(
                       new RTCIceCandidate(JSON.parse(candidate))
                     );
                   });
@@ -236,6 +244,8 @@ export default defineComponent({
             console.log(err);
           });
       });
+
+      this.peerConnection = pc;
     },
   },
 });
