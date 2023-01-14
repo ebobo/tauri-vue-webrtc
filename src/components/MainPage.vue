@@ -179,14 +179,12 @@ export default defineComponent({
     async connectToCamera() {
       if (this.selectCameraID === undefined) return;
       if (this.peerConnection != null) await this.peerConnection.close();
-      console.log('connectToCamera');
 
       this.peerConnection = new RTCPeerConnection({
         iceServers: [{ urls: STUN_URL }],
       });
 
       this.peerConnection.ontrack = (event: any) => {
-        console.log('ontrack');
         const video = document.getElementById('videoCtl') as HTMLVideoElement;
         video.srcObject = event.streams[0];
       };
